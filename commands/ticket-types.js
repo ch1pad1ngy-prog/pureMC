@@ -1,6 +1,6 @@
 const { SlashCommandBuilder, PermissionFlagsBits, ChannelType } = require('discord.js');
-const { baseEmbed, COLORS } = require('../embeds');
-const { isStaff } = require('../permissions');
+const { baseEmbed, COLORS } = require('../src/embeds');
+const { isStaff } = require('../src/permissions');
 const tickets = require('../src/ticketManager');
 
 module.exports = {

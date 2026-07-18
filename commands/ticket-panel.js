@@ -1,5 +1,5 @@
 const { SlashCommandBuilder, PermissionFlagsBits, ChannelType } = require('discord.js');
-const { isStaff } = require('../permissions');
+const { isStaff } = require('../src/permissions');
 const tickets = require('../src/ticketManager');
 
 module.exports = {

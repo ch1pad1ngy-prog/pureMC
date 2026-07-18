@@ -1,6 +1,6 @@
 const { SlashCommandBuilder } = require('discord.js');
-const { baseEmbed, COLORS } = require('../embeds');
-const linking = require('../linking');
+const { baseEmbed, COLORS } = require('../src/embeds');
+const linking = require('../src/linking');
 
 module.exports = {
   data: new SlashCommandBuilder()

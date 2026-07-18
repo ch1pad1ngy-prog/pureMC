@@ -64,7 +64,29 @@ Start the bot:
 npm start
 ```
 
-## 4. Running it permanently (systemd)
+## 4. Hosting on Railway (bot separate from the Minecraft server)
+
+If the bot runs on Railway and your Minecraft server is a separate VPS, the bot
+has no filesystem access to `logs/latest.log` — so join/leave detection and
+`!verify` linking need a small forwarder script instead. RCON-based features
+(`/online`, `/mccommand`) are unaffected since those just need network access.
+
+1. **On Railway**: set all the variables from `.env.example` in the service's
+   **Variables** tab (Railway doesn't read `.env` files — this is instead of that).
+   Leave `MC_LOG_PATH` blank. Set `WEBHOOK_SECRET` to a random string
+   (e.g. `openssl rand -hex 24`).
+2. Go to **Settings → Networking → Generate Domain** so the bot has a public URL.
+3. Make sure your Minecraft server's RCON port is reachable from the internet
+   (Railway's outbound IPs are dynamic, so this generally means opening it
+   broadly on your firewall — keep `RCON_PASSWORD` strong).
+4. Copy the `forwarder/` folder onto your Minecraft VPS and follow
+   `forwarder/README.md` to point it at your Railway domain. That script tails
+   the log and forwards join/leave/chat lines to the bot's webhook endpoint.
+
+If instead the bot runs on the same machine as the Minecraft server, skip all
+of this and just set `MC_LOG_PATH` — no forwarder needed.
+
+## 5. Running it permanently (systemd)
 
 ```ini
 # /etc/systemd/system/puremc.service
@@ -88,7 +110,7 @@ sudo systemctl daemon-reload
 sudo systemctl enable --now puremc
 ```
 
-## 5. Setting up tickets with multiple categories
+## 6. Setting up tickets with multiple categories
 
 This is the part you asked about specifically — you're not stuck with one generic ticket type.
 
@@ -109,9 +131,9 @@ This is the part you asked about specifically — you're not stuck with one gene
 
 You can add or remove categories at any time — no restart needed, and any panel you post afterward will reflect the current list. If you edit categories after a panel is already posted, re-run `/ticket-panel` to refresh it.
 
-## 6. How account linking works
+## 7. How account linking works
 
-No Minecraft plugin required — it works by watching the log file:
+No Minecraft plugin required — it works by watching the log file (directly, or via the forwarder if hosted separately):
 
 1. User runs `/link username:Steve` in Discord.
 2. Bot looks up the account via the Mojang API and gives them a one-time code.
@@ -121,7 +143,7 @@ No Minecraft plugin required — it works by watching the log file:
 
 `/whois` and `/online` both cross-reference this table so you can see, e.g., which Discord member is playing as which Minecraft username.
 
-## 7. Notes / things to double check
+## 8. Notes / things to double check
 
 - `bulkDelete` (used by `/clear`) can only remove messages younger than 14 days — Discord API limitation, not something the bot can work around.
 - Log-based join/leave detection depends on your server's log format matching vanilla/Paper/Spigot's default `<name> joined/left the game` lines. Heavily modified logging plugins may need the regexes in `src/logWatcher.js` adjusted.

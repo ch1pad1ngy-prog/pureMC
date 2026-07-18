@@ -1,6 +1,6 @@
 const { SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
-const { baseEmbed, COLORS } = require('../embeds');
-const { isStaff } = require('../permissions');
+const { baseEmbed, COLORS } = require('../src/embeds');
+const { isStaff } = require('../src/permissions');
 const db = require('../src/database');
 
 module.exports = {

@@ -4,6 +4,7 @@ const path = require('path');
 const { Client, GatewayIntentBits, Collection } = require('discord.js');
 const { baseEmbed, COLORS } = require('./embeds');
 const LogWatcher = require('./logWatcher');
+const WebhookServer = require('./webhookServer');
 const linking = require('./linking');
 
 const client = new Client({
@@ -38,9 +39,7 @@ async function getActivityChannel() {
   return client.channels.fetch(id).catch(() => null);
 }
 
-const watcher = new LogWatcher(process.env.MC_LOG_PATH);
-
-watcher.on('join', async ({ username }) => {
+async function handleJoin({ username }) {
   const link = linking.getLinkByUsername(username);
   const channel = await getActivityChannel();
   if (!channel) return;
@@ -50,17 +49,17 @@ watcher.on('join', async ({ username }) => {
       description: `🟢 **${username}** joined the server${link ? ` (<@${link.discord_id}>)` : ''}`,
     })],
   }).catch(() => {});
-});
+}
 
-watcher.on('leave', async ({ username }) => {
+async function handleLeave({ username }) {
   const channel = await getActivityChannel();
   if (!channel) return;
   channel.send({
     embeds: [baseEmbed({ color: COLORS.danger, description: `🔴 **${username}** left the server` })],
   }).catch(() => {});
-});
+}
 
-watcher.on('chat', async ({ username, message }) => {
+async function handleChat({ username, message }) {
   const verifyMatch = message.trim().match(/^!verify\s+([A-Za-z0-9]{4,8})$/i);
   if (!verifyMatch) return;
 
@@ -79,8 +78,30 @@ watcher.on('chat', async ({ username, message }) => {
   } catch {
     // DMs closed - that's fine, the link still succeeded.
   }
-});
+}
 
-watcher.start();
+function attachMcEventHandlers(emitter) {
+  emitter.on('join', handleJoin);
+  emitter.on('leave', handleLeave);
+  emitter.on('chat', handleChat);
+}
+
+// ---- Option A: bot and MC server share a filesystem (MC_LOG_PATH is set) ----
+if (process.env.MC_LOG_PATH) {
+  const watcher = new LogWatcher(process.env.MC_LOG_PATH);
+  attachMcEventHandlers(watcher);
+  watcher.start();
+}
+
+// ---- Option B: bot runs elsewhere (e.g. Railway) and a forwarder script on
+// the MC VPS POSTs events to us instead (see /forwarder in this repo) ----
+if (process.env.WEBHOOK_SECRET) {
+  const webhookServer = new WebhookServer({
+    port: Number(process.env.PORT) || 3000,
+    secret: process.env.WEBHOOK_SECRET,
+  });
+  attachMcEventHandlers(webhookServer);
+  webhookServer.start();
+}
 
 client.login(process.env.DISCORD_TOKEN);
